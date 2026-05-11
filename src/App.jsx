@@ -8,6 +8,7 @@ import CourseDetail from './pages/CourseDetail';
 import LessonView from './pages/LessonView';
 import ManageCourses from './pages/ManageCourses';
 import CourseEditor from './pages/CourseEditor';
+import AdminPanel from './pages/AdminPanel';
 
 const ProtectedRoute = ({ children, roles }) => {
   const { user, profile, loading } = useAuth();
@@ -60,7 +61,7 @@ function App() {
             <Route path="courses" element={<CourseList />} />
             <Route path="courses/:id" element={<CourseDetail />} />
             
-            {/* Instructor Routes */}
+            {/* Instructor & Admin Routes */}
             <Route path="manage-courses" element={
               <ProtectedRoute roles={['instructor', 'admin']}>
                 <ManageCourses />
@@ -74,6 +75,13 @@ function App() {
             <Route path="manage-courses/edit/:id" element={
               <ProtectedRoute roles={['instructor', 'admin']}>
                 <CourseEditor />
+              </ProtectedRoute>
+            } />
+
+            {/* Admin-only Routes */}
+            <Route path="admin" element={
+              <ProtectedRoute roles={['admin']}>
+                <AdminPanel />
               </ProtectedRoute>
             } />
           </Route>

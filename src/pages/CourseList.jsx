@@ -1,16 +1,33 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
+import { useAuth } from '../context/AuthContext';
 import CourseCard from '../components/CourseCard';
-import { Search, Filter, Loader2, BookOpen } from 'lucide-react';
+import { Search, Loader2, BookOpen } from 'lucide-react';
 
 const CourseList = () => {
+  const { profile } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [courses, setCourses] = useState([]);
+  const [enrolledCourseIds, setEnrolledCourseIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
   const [filteredCourses, setFilteredCourses] = useState([]);
 
   useEffect(() => {
     fetchCourses();
+  }, []);
+
+  useEffect(() => {
+    if (profile?.role === 'student') {
+      fetchEnrolledIds();
+    }
+  }, [profile]);
+
+  // Sync URL search param to searchTerm state on mount
+  useEffect(() => {
+    const q = searchParams.get('q');
+    if (q) setSearchTerm(q);
   }, []);
 
   const fetchCourses = async () => {
@@ -18,10 +35,7 @@ const CourseList = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('courses')
-        .select(`
-          *,
-          instructor:profiles(full_name)
-        `)
+        .select('*, instructor:profiles(full_name)')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -34,12 +48,29 @@ const CourseList = () => {
     }
   };
 
+  const fetchEnrolledIds = async () => {
+    const { data } = await supabase
+      .from('enrollments')
+      .select('course_id')
+      .eq('student_id', profile.id);
+    setEnrolledCourseIds(new Set((data || []).map(e => e.course_id)));
+  };
+
   useEffect(() => {
-    const filtered = courses.filter(course => 
-      course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      course.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    const term = searchTerm.toLowerCase();
+    const filtered = courses.filter(course =>
+      course.title.toLowerCase().includes(term) ||
+      course.description?.toLowerCase().includes(term) ||
+      course.instructor?.full_name?.toLowerCase().includes(term)
     );
     setFilteredCourses(filtered);
+
+    // Update URL param
+    if (searchTerm) {
+      setSearchParams({ q: searchTerm });
+    } else {
+      setSearchParams({});
+    }
   }, [searchTerm, courses]);
 
   if (loading) {
@@ -56,23 +87,28 @@ const CourseList = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Tất cả khóa học</h1>
-          <p className="text-gray-500 mt-1">Khám phá các khóa học mới nhất từ đội ngũ giảng viên chuyên nghiệp</p>
+          <p className="text-gray-500 mt-1">
+            {filteredCourses.length} khóa học • Khám phá kiến thức từ đội ngũ giảng viên chuyên nghiệp
+          </p>
         </div>
 
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          <div className="relative flex-1 md:w-80 group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 transition-colors" size={18} />
-            <input 
-              type="text" 
-              placeholder="Tìm kiếm khóa học..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-2xl outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-600 transition-all shadow-sm"
-            />
-          </div>
-          <button className="p-3 bg-white border border-gray-200 rounded-2xl text-gray-500 hover:text-blue-600 hover:border-blue-600 hover:bg-blue-50 transition-all shadow-sm">
-            <Filter size={20} />
-          </button>
+        <div className="relative w-full md:w-80">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 transition-colors" size={18} />
+          <input 
+            type="text" 
+            placeholder="Tìm kiếm khóa học, giảng viên..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-2xl outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-600 transition-all shadow-sm"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              ✕
+            </button>
+          )}
         </div>
       </div>
 
@@ -80,7 +116,11 @@ const CourseList = () => {
       {filteredCourses.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredCourses.map(course => (
-            <CourseCard key={course.id} course={course} />
+            <CourseCard
+              key={course.id}
+              course={course}
+              isEnrolled={enrolledCourseIds.has(course.id)}
+            />
           ))}
         </div>
       ) : (
@@ -90,7 +130,7 @@ const CourseList = () => {
           </div>
           <h3 className="text-xl font-bold text-gray-900 mb-2">Không tìm thấy khóa học nào</h3>
           <p className="text-gray-500 max-w-md mx-auto">
-            Thử thay đổi từ khóa tìm kiếm hoặc quay lại sau để xem các khóa học mới.
+            {searchTerm ? `Không có kết quả cho "${searchTerm}". Thử từ khóa khác.` : 'Chưa có khóa học nào được đăng tải.'}
           </p>
         </div>
       )}

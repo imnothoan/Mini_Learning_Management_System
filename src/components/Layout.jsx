@@ -5,23 +5,32 @@ import {
   LayoutDashboard, 
   LogOut, 
   Menu, 
-  X,
   PlusCircle,
   GraduationCap,
-  Settings,
-  Bell
+  Search,
+  Bell,
+  ShieldAlert
 } from 'lucide-react';
 import { useState } from 'react';
 
 const Layout = () => {
-  const { user, profile, signOut } = useAuth();
+  const { profile, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/auth');
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/courses?q=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery('');
+    }
   };
 
   const menuItems = [
@@ -33,14 +42,30 @@ const Layout = () => {
     menuItems.push({ name: 'Quản lý đào tạo', icon: PlusCircle, path: '/manage-courses' });
   }
 
-  const isActive = (path) => location.pathname === path;
+  if (profile?.role === 'admin') {
+    menuItems.push({ name: 'Quản trị hệ thống', icon: ShieldAlert, path: '/admin' });
+  }
+
+  const isActive = (path) => path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
+
+  const roleLabel = {
+    admin: 'Quản trị viên',
+    instructor: 'Giảng viên',
+    student: 'Học viên',
+  }[profile?.role] || 'Người dùng';
+
+  const roleColor = {
+    admin: 'text-red-600',
+    instructor: 'text-purple-600',
+    student: 'text-blue-600',
+  }[profile?.role] || 'text-blue-600';
 
   return (
     <div className="min-h-screen bg-slate-50 flex font-sans">
       {/* Sidebar Mobile Overlay */}
       {isSidebarOpen && (
         <div 
-          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300"
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
@@ -64,7 +89,7 @@ const Layout = () => {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-4 py-8 space-y-2 overflow-y-auto">
+          <nav className="flex-1 px-4 py-8 space-y-1 overflow-y-auto">
             <p className="px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Menu chính</p>
             {menuItems.map((item) => (
               <Link
@@ -87,13 +112,13 @@ const Layout = () => {
 
           {/* User Profile Area */}
           <div className="p-6 border-t border-slate-100 bg-slate-50/50">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white font-bold shadow-md border-2 border-white">
-                {profile?.full_name?.charAt(0) || 'U'}
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white font-bold text-lg shadow-md border-2 border-white">
+                {profile?.full_name?.charAt(0)?.toUpperCase() || 'U'}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-slate-900 truncate">{profile?.full_name || 'Người dùng'}</p>
-                <p className="text-[11px] font-bold text-blue-600 uppercase tracking-tighter opacity-80">{profile?.role || 'Học viên'}</p>
+                <p className={`text-[11px] font-bold uppercase tracking-tighter opacity-80 ${roleColor}`}>{roleLabel}</p>
               </div>
             </div>
             
@@ -109,10 +134,10 @@ const Layout = () => {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 bg-slate-50 overflow-hidden">
-        {/* Header Desktop */}
-        <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 px-8 flex items-center justify-between sticky top-0 z-30">
-          <div className="lg:hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Header */}
+        <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 lg:px-8 flex items-center justify-between sticky top-0 z-30 gap-4">
+          <div className="lg:hidden flex-shrink-0">
             <button 
               onClick={() => setIsSidebarOpen(true)}
               className="p-2.5 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
@@ -121,23 +146,34 @@ const Layout = () => {
             </button>
           </div>
 
-          <div className="hidden lg:flex items-center bg-slate-100 px-4 py-2 rounded-2xl border border-slate-200 w-96 group focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-100 transition-all">
-            <X size={18} className="text-slate-400 mr-2" />
-            <input 
-              type="text" 
-              placeholder="Tìm kiếm khóa học..." 
-              className="bg-transparent border-none outline-none text-sm w-full text-slate-700 placeholder:text-slate-400"
-            />
-          </div>
+          {/* Search bar */}
+          <form onSubmit={handleSearch} className="hidden lg:flex flex-1 max-w-md">
+            <div className="relative w-full group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
+              <input 
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Tìm kiếm khóa học..." 
+                className="w-full pl-11 pr-4 py-2.5 bg-slate-100 border border-slate-200 rounded-2xl outline-none focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all text-sm"
+              />
+            </div>
+          </form>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 ml-auto">
             <button className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all relative">
               <Bell size={20} />
               <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
             </button>
-            <button className="p-2.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all">
-              <Settings size={20} />
-            </button>
+            <div className="hidden lg:flex items-center gap-2 pl-3 border-l border-slate-200">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white font-bold text-sm">
+                {profile?.full_name?.charAt(0)?.toUpperCase() || 'U'}
+              </div>
+              <div className="text-sm">
+                <p className="font-semibold text-slate-800 leading-tight">{profile?.full_name?.split(' ').pop()}</p>
+                <p className={`text-[11px] font-bold uppercase leading-tight ${roleColor}`}>{roleLabel}</p>
+              </div>
+            </div>
           </div>
         </header>
 
