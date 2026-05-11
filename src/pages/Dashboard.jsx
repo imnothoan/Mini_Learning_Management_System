@@ -26,12 +26,6 @@ const Dashboard = () => {
     totalStudents: 0
   });
 
-  useEffect(() => {
-    if (profile) {
-      fetchDashboardData();
-    }
-  }, [profile]);
-
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
@@ -129,6 +123,13 @@ const Dashboard = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (profile) {
+      fetchDashboardData();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile]);
 
   if (loading) {
     return (
