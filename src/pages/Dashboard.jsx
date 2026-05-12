@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
-import { Plus, BookOpen, Clock, Award, Loader2, Users, TrendingUp, PlayCircle, ArrowRight } from 'lucide-react';
+import { Plus, BookOpen, Award, Loader2, Users, TrendingUp, PlayCircle, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const ProgressBar = ({ value }) => (
