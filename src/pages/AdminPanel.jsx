@@ -160,7 +160,7 @@ const AdminPanel = () => {
             <h3 className="font-bold text-gray-900 flex items-center gap-2">
               <Users size={18} className="text-blue-500" /> Phân bố người dùng
             </h3>
-            {(['admin', 'instructor', 'student'] ).map(role => {
+            {(['admin', 'instructor', 'student']).map(role => {
               const count = users.filter(u => u.role === role).length;
               const pct = stats.users > 0 ? Math.round((count / stats.users) * 100) : 0;
               return (

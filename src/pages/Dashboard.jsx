@@ -64,7 +64,7 @@ const Dashboard = () => {
           .from('courses')
           .select('*, instructor:profiles(full_name)')
           .order('created_at', { ascending: false })
-          .limit(12);
+          .limit(6);
 
         const suggested = (featured || [])
           .filter((course) => !enrolledIds.has(course.id))
