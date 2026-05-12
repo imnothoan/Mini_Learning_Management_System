@@ -59,15 +59,17 @@ const Dashboard = () => {
         setStats({ primary: valid.length, avgProgress, completed, totalStudents: 0 });
 
         // Fetch featured courses not yet enrolled
-        const enrolledIds = valid.map(e => e.course.id);
+        const enrolledIds = new Set(valid.map(e => e.course.id));
         const { data: featured } = await supabase
           .from('courses')
           .select('*, instructor:profiles(full_name)')
-          .not('id', 'in', `(${enrolledIds.length > 0 ? enrolledIds.join(',') : '00000000-0000-0000-0000-000000000000'})`)
           .order('created_at', { ascending: false })
-          .limit(3);
+          .limit(12);
 
-        setFeaturedCourses(featured || []);
+        const suggested = (featured || [])
+          .filter((course) => !enrolledIds.has(course.id))
+          .slice(0, 3);
+        setFeaturedCourses(suggested);
 
       } else if (profile.role === 'instructor') {
         // Fetch instructor's courses with enrollment count

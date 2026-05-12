@@ -21,6 +21,12 @@ const roleBadgeClass = {
   instructor: 'bg-purple-50 text-purple-700 border-purple-100',
   student: 'bg-blue-50 text-blue-700 border-blue-100',
 };
+const statsColorClass = {
+  blue: 'bg-blue-50 text-blue-600',
+  indigo: 'bg-indigo-50 text-indigo-600',
+  green: 'bg-green-50 text-green-600',
+  yellow: 'bg-yellow-50 text-yellow-600',
+};
 
 const AdminPanel = () => {
   const { profile } = useAuth();
@@ -117,7 +123,7 @@ const AdminPanel = () => {
           { label: 'Khóa học hoàn thành', value: stats.completed, icon: Award, color: 'yellow' },
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm flex items-center gap-4">
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-${color}-50 text-${color}-600`}>
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${statsColorClass[color] || statsColorClass.blue}`}>
               <Icon size={22} />
             </div>
             <div>
