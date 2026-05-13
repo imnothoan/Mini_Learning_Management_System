@@ -6,8 +6,6 @@ import {
   Save, 
   Plus, 
   Trash2, 
-  MoveUp, 
-  MoveDown, 
   Loader2, 
   ChevronLeft,
   Image as ImageIcon,

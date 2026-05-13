@@ -1,3 +1,8 @@
+-- =================================================================
+-- Mini Learning Management System - Database Schema
+-- Run this in your Supabase project's SQL Editor
+-- =================================================================
+
 -- Create a table for public profiles
 CREATE TABLE profiles (
   id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
@@ -31,7 +36,7 @@ CREATE TABLE lessons (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create enrollments table (to track progress)
+-- Create enrollments table (to track overall progress)
 CREATE TABLE enrollments (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   student_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
@@ -42,11 +47,24 @@ CREATE TABLE enrollments (
   UNIQUE(student_id, course_id)
 );
 
--- Set up Row Level Security (RLS)
+-- Create lesson_completions table (to track per-lesson completion)
+CREATE TABLE lesson_completions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  student_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  lesson_id UUID REFERENCES lessons(id) ON DELETE CASCADE,
+  course_id UUID REFERENCES courses(id) ON DELETE CASCADE,
+  completed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(student_id, lesson_id)
+);
+
+-- =================================================================
+-- Row Level Security (RLS)
+-- =================================================================
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE courses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE lessons ENABLE ROW LEVEL SECURITY;
 ALTER TABLE enrollments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE lesson_completions ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
 CREATE POLICY "Public profiles are viewable by everyone." ON profiles
@@ -73,12 +91,34 @@ CREATE POLICY "Only the instructor or admin can update courses." ON courses
     EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
   );
 
--- Lessons policies
-CREATE POLICY "Lessons are viewable by enrolled students or higher." ON lessons
-  FOR SELECT USING (
+CREATE POLICY "Only the instructor or admin can delete courses." ON courses
+  FOR DELETE USING (
+    auth.uid() = instructor_id OR
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  );
+
+-- Lessons policies (publicly readable so anyone can preview course content)
+CREATE POLICY "Lessons are viewable by everyone." ON lessons
+  FOR SELECT USING (true);
+
+CREATE POLICY "Instructors can manage their course lessons." ON lessons
+  FOR INSERT WITH CHECK (
     EXISTS (
-      SELECT 1 FROM enrollments WHERE course_id = lessons.course_id AND student_id = auth.uid()
-    ) OR 
+      SELECT 1 FROM courses WHERE id = lessons.course_id AND instructor_id = auth.uid()
+    ) OR
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  );
+
+CREATE POLICY "Instructors can update their course lessons." ON lessons
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM courses WHERE id = lessons.course_id AND instructor_id = auth.uid()
+    ) OR
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  );
+
+CREATE POLICY "Instructors can delete their course lessons." ON lessons
+  FOR DELETE USING (
     EXISTS (
       SELECT 1 FROM courses WHERE id = lessons.course_id AND instructor_id = auth.uid()
     ) OR
@@ -89,18 +129,51 @@ CREATE POLICY "Lessons are viewable by enrolled students or higher." ON lessons
 CREATE POLICY "Students can view their own enrollments." ON enrollments
   FOR SELECT USING (auth.uid() = student_id);
 
+CREATE POLICY "Instructors can view enrollments for their courses." ON enrollments
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM courses WHERE id = enrollments.course_id AND instructor_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Admins can view all enrollments." ON enrollments
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  );
+
 CREATE POLICY "Students can enroll themselves." ON enrollments
   FOR INSERT WITH CHECK (auth.uid() = student_id);
 
 CREATE POLICY "Students can update their own progress." ON enrollments
   FOR UPDATE USING (auth.uid() = student_id);
 
--- Trigger to handle new user registration
+-- Lesson completions policies
+CREATE POLICY "Students can view their own completions." ON lesson_completions
+  FOR SELECT USING (auth.uid() = student_id);
+
+CREATE POLICY "Instructors can view completions for their courses." ON lesson_completions
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM courses WHERE id = lesson_completions.course_id AND instructor_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Students can insert their own completions." ON lesson_completions
+  FOR INSERT WITH CHECK (auth.uid() = student_id);
+
+-- =================================================================
+-- Trigger: auto-create profile on user registration
+-- =================================================================
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
   INSERT INTO public.profiles (id, full_name, avatar_url, role)
-  VALUES (new.id, new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'avatar_url', COALESCE(new.raw_user_meta_data->>'role', 'student'));
+  VALUES (
+    new.id,
+    new.raw_user_meta_data->>'full_name',
+    new.raw_user_meta_data->>'avatar_url',
+    COALESCE(new.raw_user_meta_data->>'role', 'student')
+  );
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -108,3 +181,10 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- =================================================================
+-- Migration: Update existing policies (run if upgrading from v1)
+-- =================================================================
+-- DROP POLICY IF EXISTS "Lessons are viewable by enrolled students or higher." ON lessons;
+-- Then run the CREATE POLICY statements above for lessons.
+
