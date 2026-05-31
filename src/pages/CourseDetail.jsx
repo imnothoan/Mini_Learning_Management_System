@@ -1,35 +1,39 @@
-import { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
+import { useCallback, useEffect, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import CourseCover from '../components/CourseCover';
 import { useAuth } from '../context/AuthContext';
-import { 
-  BookOpen, 
-  Clock, 
-  PlayCircle, 
-  User, 
-  ChevronRight, 
-  Loader2, 
-  ShieldCheck,
-  Calendar,
-  Layers,
-  CheckCircle,
-  Lock
-} from 'lucide-react';
+import { supabase } from '../lib/supabaseClient';
+
+const formatDate = (value) => {
+  if (!value) return '-';
+  return new Date(value).toLocaleDateString('en-US');
+};
+
+const ProgressBar = ({ value }) => (
+  <div className="h-2 w-full overflow-hidden rounded bg-slate-100">
+    <div className="h-full bg-blue-600" style={{ width: `${value}%` }} />
+  </div>
+);
 
 const CourseDetail = () => {
   const { id } = useParams();
   const { user, profile } = useAuth();
   const navigate = useNavigate();
+
   const [course, setCourse] = useState(null);
   const [lessons, setLessons] = useState([]);
   const [enrolled, setEnrolled] = useState(false);
   const [enrollment, setEnrollment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState(false);
+  const [error, setError] = useState('');
+  const [actionError, setActionError] = useState('');
 
-  const fetchCourseDetails = async () => {
+  const fetchCourseDetails = useCallback(async () => {
     try {
       setLoading(true);
+      setError('');
+
       const { data: courseData, error: courseError } = await supabase
         .from('courses')
         .select('*, instructor:profiles(full_name, avatar_url)')
@@ -37,51 +41,56 @@ const CourseDetail = () => {
         .single();
 
       if (courseError) throw courseError;
-      setCourse(courseData);
 
-      const { data: lessonsData } = await supabase
+      const { data: lessonsData, error: lessonsError } = await supabase
         .from('lessons')
         .select('id, title, description, order_index')
         .eq('course_id', id)
         .order('order_index', { ascending: true });
 
+      if (lessonsError) throw lessonsError;
+
+      setCourse(courseData);
       setLessons(lessonsData || []);
     } catch (err) {
       console.error('Error fetching course details:', err.message);
+      setError('Unable to load this course.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
-  const checkEnrollment = async () => {
+  const checkEnrollment = useCallback(async () => {
+    if (!user?.id) {
+      setEnrolled(false);
+      setEnrollment(null);
+      return;
+    }
+
     try {
-      const { data } = await supabase
+      const { data, error: enrollmentError } = await supabase
         .from('enrollments')
         .select('*')
         .eq('course_id', id)
         .eq('student_id', user.id)
         .maybeSingle();
 
-      if (data) {
-        setEnrolled(true);
-        setEnrollment(data);
-      }
+      if (enrollmentError) throw enrollmentError;
+
+      setEnrolled(Boolean(data));
+      setEnrollment(data || null);
     } catch (err) {
       console.error('Error checking enrollment:', err.message);
     }
-  };
+  }, [id, user?.id]);
 
   useEffect(() => {
     fetchCourseDetails();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [fetchCourseDetails]);
 
   useEffect(() => {
-    if (user) {
-      checkEnrollment();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, user]);
+    checkEnrollment();
+  }, [checkEnrollment]);
 
   const handleEnroll = async () => {
     if (!user) {
@@ -91,222 +100,231 @@ const CourseDetail = () => {
 
     try {
       setEnrolling(true);
-      const { error } = await supabase
+      setActionError('');
+      const { error: enrollError } = await supabase
         .from('enrollments')
         .insert({
           course_id: id,
           student_id: user.id,
-          progress: 0
+          progress: 0,
         });
 
-      if (error) throw error;
-      setEnrolled(true);
+      if (enrollError) throw enrollError;
+
       await checkEnrollment();
     } catch (err) {
       console.error('Error enrolling:', err.message);
-      alert('Có lỗi xảy ra khi đăng ký khóa học.');
+      setActionError('Unable to enroll in this course. Please try again.');
     } finally {
       setEnrolling(false);
     }
   };
 
   if (loading) {
+    return <div className="py-16 text-center text-sm text-slate-500">Loading course details...</div>;
+  }
+
+  if (error || !course) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="animate-spin text-blue-600 w-8 h-8" />
+      <div className="py-16 text-center">
+        <p className="font-semibold text-slate-900">Course not found</p>
+        <p className="mt-1 text-sm text-slate-500">{error || 'The selected course is not available.'}</p>
+        <Link to="/courses" className="mt-4 inline-flex rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white">
+          Back to catalog
+        </Link>
       </div>
     );
   }
 
-  if (!course) {
-    return <div className="text-center py-20">Khóa học không tồn tại.</div>;
-  }
-
-  const isInstructor = profile?.role === 'instructor' || profile?.role === 'admin';
+  const isAdmin = profile?.role === 'admin';
   const isOwnCourse = course.instructor_id === user?.id;
-  const canAccess = enrolled || isInstructor;
+  const canPreviewAsStaff = isAdmin || (profile?.role === 'instructor' && isOwnCourse);
+  const canAccess = enrolled || canPreviewAsStaff;
   const progress = enrollment?.progress || 0;
+  const skills = Array.isArray(course.skills) ? course.skills : [];
+  const outcomes = Array.isArray(course.learning_outcomes) ? course.learning_outcomes : [];
 
   return (
-    <div className="max-w-6xl mx-auto space-y-10">
-      {/* Hero Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        <div className="lg:col-span-2 space-y-6">
-          <nav className="flex items-center text-sm text-gray-500 gap-2">
-            <Link to="/courses" className="hover:text-blue-600 transition-colors">Khóa học</Link>
-            <ChevronRight size={14} />
-            <span className="text-gray-900 font-medium truncate">{course.title}</span>
-          </nav>
+    <div className="mx-auto max-w-6xl space-y-7">
+      <div className="border-b border-slate-200 pb-5">
+        <div className="mb-3 text-sm text-slate-500">
+          <Link to="/courses" className="font-semibold text-slate-600 hover:text-blue-700">Courses</Link>
+          <span className="px-2">/</span>
+          <span>{course.title}</span>
+        </div>
+        <h1 className="text-3xl font-semibold tracking-normal text-slate-950">{course.title}</h1>
+        <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">{course.description}</p>
+      </div>
 
-          <h1 className="text-4xl font-extrabold text-gray-900 leading-tight">
-            {course.title}
-          </h1>
-
-          <p className="text-lg text-gray-600 leading-relaxed">
-            {course.description}
-          </p>
-
-          <div className="flex flex-wrap items-center gap-6 pt-4 text-sm text-gray-600">
-            <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl border border-gray-100 shadow-sm">
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-                <User size={16} />
-              </div>
-              <span className="font-semibold">{course.instructor?.full_name || 'Giảng viên'}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Layers size={18} className="text-blue-500" />
-              <span>{lessons.length} bài học</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Calendar size={18} className="text-blue-500" />
-              <span>Cập nhật {new Date(course.updated_at).toLocaleDateString('vi-VN')}</span>
-            </div>
-          </div>
-
-          {/* Progress bar for enrolled students */}
-          {enrolled && (
-            <div className="bg-blue-50 rounded-2xl p-5 space-y-3">
-              <div className="flex items-center justify-between text-sm font-semibold text-blue-800">
-                <span>Tiến độ học tập của bạn</span>
-                <span>{progress}%</span>
-              </div>
-              <div className="w-full h-3 bg-blue-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-blue-600 rounded-full transition-all duration-700"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-              {enrollment?.completed && (
-                <div className="flex items-center gap-2 text-green-700 text-sm font-semibold">
-                  <CheckCircle size={16} /> Bạn đã hoàn thành khóa học này!
-                </div>
-              )}
+      <div className="grid gap-6 lg:grid-cols-[1.5fr_0.9fr]">
+        <main className="space-y-6">
+          {actionError && (
+            <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+              {actionError}
             </div>
           )}
-        </div>
 
-        <div className="lg:col-span-1">
-          <div className="sticky top-28 bg-white rounded-3xl shadow-xl shadow-blue-900/5 border border-gray-100 overflow-hidden">
-            <div className="aspect-video relative overflow-hidden">
-              <img 
-                src={course.thumbnail_url || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800'} 
-                alt={course.title}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                <div className="w-16 h-16 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/50">
-                  <PlayCircle size={32} />
-                </div>
-              </div>
+          <section className="rounded-md border border-slate-200 bg-white">
+            <div className="border-b border-slate-200 px-5 py-4">
+              <h2 className="font-semibold text-slate-950">Course information</h2>
             </div>
-            
-            <div className="p-8 space-y-6">
-              <div className="flex items-center justify-between">
-                <span className="text-3xl font-bold text-gray-900">Miễn phí</span>
-                <span className="px-3 py-1 bg-green-50 text-green-700 text-xs font-bold rounded-full border border-green-100">TRỌN ĐỜI</span>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[560px] text-left text-sm">
+                <tbody className="divide-y divide-slate-100">
+                  {[
+                    ['Instructor', course.instructor?.full_name || 'Instructor'],
+                    ['Category', course.category || 'Course'],
+                    ['Level', course.level || 'Beginner'],
+                    ['Duration', course.duration || 'Self-paced'],
+                    ['Lessons', `${lessons.length}`],
+                    ['Updated', formatDate(course.updated_at)],
+                  ].map(([label, value]) => (
+                    <tr key={label}>
+                      <th className="w-44 bg-slate-50 px-5 py-3 font-medium text-slate-600">{label}</th>
+                      <td className="px-5 py-3 text-slate-900">{value}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          {outcomes.length > 0 && (
+            <section className="rounded-md border border-slate-200 bg-white">
+              <div className="border-b border-slate-200 px-5 py-4">
+                <h2 className="font-semibold text-slate-950">Learning outcomes</h2>
+              </div>
+              <ul className="grid gap-0 divide-y divide-slate-100 md:grid-cols-2 md:divide-x md:divide-y-0">
+                {outcomes.map((outcome) => (
+                  <li key={outcome} className="px-5 py-4 text-sm leading-6 text-slate-700">
+                    {outcome}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {skills.length > 0 && (
+            <section className="rounded-md border border-slate-200 bg-white p-5">
+              <h2 className="font-semibold text-slate-950">Skills covered</h2>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {skills.map((skill) => (
+                  <span key={skill} className="rounded border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-slate-700">
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </section>
+          )}
+
+          <section className="rounded-md border border-slate-200 bg-white">
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+              <h2 className="font-semibold text-slate-950">Lesson outline</h2>
+              <span className="text-sm text-slate-500">{lessons.length} lessons</span>
+            </div>
+            {lessons.length > 0 ? (
+              <div className="divide-y divide-slate-100">
+                {lessons.map((lesson, index) => {
+                  const lessonProgress = lessons.length > 0 ? Math.round(((index + 1) / lessons.length) * 100) : 0;
+                  const isCompleted = enrolled && lessonProgress <= progress;
+
+                  return (
+                    <div key={lesson.id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold uppercase text-slate-500">Lesson {index + 1}</p>
+                        <h3 className="mt-1 font-medium text-slate-950">{lesson.title}</h3>
+                        {lesson.description && (
+                          <p className="mt-1 text-sm text-slate-500">{lesson.description}</p>
+                        )}
+                      </div>
+                      <span className={`w-fit rounded border px-2.5 py-1 text-xs font-semibold ${
+                        isCompleted
+                          ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                          : canAccess
+                            ? 'border-blue-200 bg-blue-50 text-blue-700'
+                            : 'border-slate-200 bg-slate-50 text-slate-500'
+                      }`}
+                      >
+                        {isCompleted ? 'Completed' : canAccess ? 'Available' : 'Enroll to view'}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="p-8 text-center text-sm text-slate-500">Course content is being updated.</div>
+            )}
+          </section>
+        </main>
+
+        <aside className="space-y-6">
+          <section className="overflow-hidden rounded-md border border-slate-200 bg-white">
+            <div className="aspect-video border-b border-slate-200">
+              <CourseCover src={course.thumbnail_url} title={course.title} />
+            </div>
+            <div className="space-y-5 p-5">
+              <div>
+                <p className="text-sm text-slate-500">Enrollment</p>
+                <p className="mt-1 text-xl font-semibold text-slate-950">Free</p>
               </div>
 
               {canAccess ? (
-                <Link 
+                <Link
                   to={`/learn/${id}`}
-                  className="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-blue-200"
+                  className="block w-full rounded-md bg-blue-600 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-blue-700"
                 >
-                  {isInstructor && isOwnCourse ? 'Xem trước khóa học' : progress > 0 ? 'Tiếp tục học' : 'Bắt đầu học ngay'}
+                  {canPreviewAsStaff ? 'Preview course' : progress > 0 ? 'Continue learning' : 'Start learning'}
                 </Link>
               ) : (
-                <button 
+                <button
+                  type="button"
                   onClick={handleEnroll}
                   disabled={enrolling}
-                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-2"
+                  className="w-full rounded-md bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:bg-blue-300"
                 >
-                  {enrolling && <Loader2 className="animate-spin" size={20} />}
-                  Đăng ký học ngay — Miễn phí
+                  {enrolling ? 'Enrolling...' : 'Enroll now'}
                 </button>
               )}
 
-              <div className="space-y-4 pt-4 border-t border-gray-100">
-                <p className="text-sm font-bold text-gray-900 uppercase tracking-wider">Khóa học này bao gồm:</p>
-                <div className="space-y-3">
-                  {[
-                    { icon: BookOpen, text: `${lessons.length} bài giảng video` },
-                    { icon: Clock, text: 'Học mọi lúc, mọi nơi' },
-                    { icon: ShieldCheck, text: 'Chứng nhận hoàn thành' }
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center gap-3 text-sm text-gray-600">
-                      <item.icon size={18} className="text-blue-500" />
-                      <span>{item.text}</span>
-                    </div>
-                  ))}
+              {enrolled && (
+                <div className="rounded-md border border-slate-200 bg-slate-50 p-4">
+                  <div className="mb-2 flex justify-between text-sm text-slate-600">
+                    <span>{enrollment?.completed ? 'Completed' : 'Progress'}</span>
+                    <span>{progress}%</span>
+                  </div>
+                  <ProgressBar value={progress} />
                 </div>
+              )}
+
+              <div className="border-t border-slate-200 pt-4">
+                <h2 className="text-sm font-semibold text-slate-950">Included</h2>
+                <ul className="mt-3 space-y-2 text-sm text-slate-600">
+                  <li>{lessons.length} video lessons</li>
+                  <li>{course.duration || 'Self-paced learning'}</li>
+                  <li>{course.level || 'Beginner'} level</li>
+                  <li>Progress tracking after enrollment</li>
+                </ul>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
+          </section>
 
-      {/* Syllabus */}
-      <div className="bg-white rounded-3xl border border-gray-100 p-8 lg:p-12 shadow-sm">
-        <h2 className="text-2xl font-bold text-gray-900 mb-8 flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
-            <BookOpen size={20} />
-          </div>
-          Nội dung khóa học
-          <span className="ml-auto text-sm font-medium text-gray-400">{lessons.length} bài học</span>
-        </h2>
-
-        <div className="space-y-3">
-          {lessons.length > 0 ? (
-            lessons.map((lesson, index) => {
-              const lessonProgress = ((index + 1) / lessons.length) * 100;
-              const isCompleted = enrolled && lessonProgress <= progress;
-
-              return (
-                <div
-                  key={lesson.id}
-                  className={`flex items-center justify-between p-5 rounded-2xl border transition-all group cursor-default
-                    ${isCompleted ? 'bg-green-50 border-green-100' : 'bg-gray-50 border-transparent hover:border-blue-100 hover:bg-white hover:shadow-sm'}`}
-                >
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm font-bold text-gray-400 w-6">{index + 1}</span>
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm border
-                      ${isCompleted ? 'bg-green-100 border-green-200 text-green-600' : 'bg-white border-gray-100 text-gray-400 group-hover:text-blue-600'} transition-colors`}>
-                      {isCompleted ? <CheckCircle size={20} /> : <PlayCircle size={20} />}
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{lesson.title}</h3>
-                      {lesson.description && (
-                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{lesson.description}</p>
-                      )}
-                    </div>
-                  </div>
-                  <div className={`text-xs font-bold px-3 py-1 rounded-lg
-                    ${isCompleted ? 'bg-green-100 text-green-700' : 
-                      canAccess ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-400'}`}>
-                    {isCompleted ? 'Hoàn thành' : canAccess ? 'Xem ngay' : <span className="flex items-center gap-1"><Lock size={10} /> Đăng ký để xem</span>}
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="text-center py-10 text-gray-500">
-              Nội dung đang được cập nhật...
-            </div>
+          {profile?.role === 'student' && !enrolled && lessons.length > 0 && (
+            <section className="rounded-md border border-blue-200 bg-blue-50 p-5">
+              <h2 className="font-semibold text-blue-950">Ready to start?</h2>
+              <p className="mt-2 text-sm leading-6 text-blue-900">
+                Enroll to access the lesson player and progress tracking for this course.
+              </p>
+              <button
+                type="button"
+                onClick={handleEnroll}
+                disabled={enrolling}
+                className="mt-4 rounded-md bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:bg-blue-300"
+              >
+                {enrolling ? 'Enrolling...' : 'Enroll now'}
+              </button>
+            </section>
           )}
-        </div>
-
-        {!enrolled && profile?.role === 'student' && lessons.length > 0 && (
-          <div className="mt-8 p-6 bg-blue-50 rounded-2xl border border-blue-100 text-center">
-            <p className="text-blue-800 font-semibold mb-4">Đăng ký miễn phí để truy cập toàn bộ {lessons.length} bài học</p>
-            <button
-              onClick={handleEnroll}
-              disabled={enrolling}
-              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-3 rounded-2xl transition-all shadow-lg shadow-blue-200 disabled:bg-blue-400"
-            >
-              {enrolling && <Loader2 className="animate-spin" size={18} />}
-              Đăng ký ngay
-            </button>
-          </div>
-        )}
+        </aside>
       </div>
     </div>
   );

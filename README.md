@@ -1,89 +1,105 @@
 # Mini Learning Management System
 
-Ứng dụng web hỗ trợ dạy và học trực tuyến với 3 vai trò:
-- **Admin**
-- **Giảng viên (Instructor)**
-- **Học viên (Student)**
+Mini Learning Management System is a small-scale web application for online learning management. It was built as a foundation project with a complete front-end, back-end service, relational database, authentication, and role-based access control.
 
-## Chức năng chính
+## Main Features
 
-- Đăng ký / đăng nhập bằng Supabase Auth
-- Phân quyền theo vai trò (admin, instructor, student)
-- Quản lý khóa học (tạo, sửa, xóa) cho giảng viên/admin
-- Quản lý bài học theo từng khóa
-- Đăng ký khóa học cho học viên
-- Học theo danh sách bài học + video YouTube
-- Theo dõi tiến độ học tập theo phần trăm
-- Dashboard thống kê theo từng vai trò
-- Admin panel theo dõi người dùng, khóa học, lượt đăng ký
+- Sign up, sign in, and sign out with Supabase Auth
+- Three roles: Administrator, Instructor, and Student
+- Students can browse courses, search, enroll, learn from video lessons, and track progress
+- Instructors can create, update, delete, and preview courses and lessons
+- Administrators can monitor system statistics and update user roles
+- Course cover upload through Supabase Storage
+- Lesson player with course outline, lesson completion status, and automatic progress calculation
+- Row Level Security policies in Supabase to protect role-based data access
 
-## Công nghệ sử dụng
+## Technology Stack
 
 - React + Vite
 - React Router
 - Tailwind CSS
-- Supabase (Auth + Postgres + RLS)
+- Supabase Auth, PostgreSQL, Storage, and Row Level Security
 - ESLint
 
-## Cấu hình môi trường
+## Project Structure
 
-Tạo file `.env.local` từ `.env.example`:
+```text
+.
+├── public/                 # favicon
+├── docs/                   # report and defense guide
+├── src/
+│   ├── components/         # Layout and reusable course card
+│   ├── context/            # Authentication context
+│   ├── lib/                # Supabase client
+│   ├── pages/              # Auth, Dashboard, Courses, Lesson, Admin
+│   ├── App.jsx
+│   ├── index.css
+│   └── main.jsx
+├── supabase/schema.sql     # Database schema, RLS policies, triggers
+├── seed.js                 # Demo data seeding script
+├── package.json
+└── README.md
+```
+
+## Environment Setup
+
+Create `.env.local` from `.env.example`:
 
 ```bash
 cp .env.example .env.local
 ```
 
-Điền các biến môi trường:
+Fill in the required values:
 
 ```env
-VITE_SUPABASE_URL=...
-VITE_SUPABASE_ANON_KEY=...
-SUPABASE_SERVICE_ROLE_KEY=...
+VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+VITE_SUPABASE_ANON_KEY=your_anon_key_here
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
+DATABASE_PASSWORD=your_database_password_here
 ```
 
-## Cài đặt và chạy dự án
+Do not commit `.env.local` to GitHub.
+
+## Install and Run
 
 ```bash
 npm ci
 npm run dev
 ```
 
-## Build và kiểm tra chất lượng
+Quality checks:
 
 ```bash
 npm run lint
 npm run build
 ```
 
-> Hiện tại repository chưa có script `npm test`.
+## Database Setup
 
-## Cơ sở dữ liệu Supabase
-
-- Schema SQL: `supabase/schema.sql`
-- Seed dữ liệu mẫu: `seed.js`
-
-Chạy seed:
+1. Open Supabase SQL Editor.
+2. Run the full `supabase/schema.sql` file.
+3. Seed demo data:
 
 ```bash
 node seed.js
 ```
 
-## Tài khoản mẫu
+Demo accounts:
 
-Khi chạy seed, hệ thống sẽ tạo (hoặc dùng lại) tài khoản giảng viên:
+| Role | Email | Password |
+| --- | --- | --- |
+| Administrator | admin@example.com | password123 |
+| Instructor | instructor@example.com | password123 |
+| Student | student@example.com | password123 |
 
-- Email: `instructor@example.com`
-- Password: `password123`
+## Suggested Demo Flow
 
-## Cấu trúc thư mục chính
+1. Sign in as Administrator to view system statistics and update user roles.
+2. Sign in as Instructor to create a course, add lessons, edit course details, and preview learning content.
+3. Sign in as Student to search for courses, enroll, watch a lesson, mark lessons as complete, and observe progress updates.
+4. Open Supabase to explain the database tables: `profiles`, `courses`, `lessons`, `enrollments`, `lesson_completions`, and the RLS policies.
 
-- `src/pages`: các trang chính (Auth, Dashboard, CourseList, CourseDetail, LessonView, ManageCourses, CourseEditor, AdminPanel)
-- `src/components`: layout và component dùng lại
-- `src/context`: AuthContext
-- `src/lib`: Supabase client
-- `supabase`: schema SQL
+## Documentation
 
-## Ghi chú
-
-- Không commit secret/keys thật vào repository.
-- Nếu lộ key, hãy rotate key trên Supabase ngay.
+- `docs/MiniLMS_Report.md`: full report content with UML-style Mermaid diagrams, ERD, database design, implementation, testing, and defense questions.
+- `docs/Defense_Guide_vi.md`: Vietnamese demo script and defense preparation notes.
