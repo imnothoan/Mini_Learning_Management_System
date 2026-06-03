@@ -3,7 +3,6 @@ import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import CourseCard from '../components/CourseCard';
-import { Loader2 } from 'lucide-react';
 
 const CourseList = () => {
   const { profile } = useAuth();
@@ -99,11 +98,7 @@ const CourseList = () => {
   const hasActiveFilters = Boolean(searchTerm || selectedCategory !== 'All categories' || selectedLevel !== 'All levels');
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="animate-spin text-blue-600 w-8 h-8" />
-      </div>
-    );
+    return <div className="py-16 text-center text-sm text-slate-500">Loading course catalog...</div>;
   }
 
   return (
@@ -112,7 +107,7 @@ const CourseList = () => {
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Course Catalog</h1>
           <p className="text-gray-500 mt-1 text-sm">
-            {filteredCourses.length} courses available for this demo system
+            {filteredCourses.length} courses available 
           </p>
         </div>
 

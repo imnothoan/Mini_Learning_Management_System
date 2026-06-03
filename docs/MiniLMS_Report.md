@@ -10,7 +10,7 @@
 | Main domain | Online learning management |
 | Front-end | React, Vite, Tailwind CSS, React Router |
 | Back-end service | Supabase Authentication, Supabase REST API, Supabase Storage |
-| Database | PostgreSQL with Row Level Security |
+| Database | PostgreSQL with role-based access control |
 | Main actors | Student, Instructor, Administrator |
 | Report format | Markdown source for Word/PDF formatting |
 
@@ -18,9 +18,9 @@
 
 Mini Learning Management System, called MiniLMS, is a small-scale web application designed to support online learning management in an academic context. The project focuses on the essential workflow of a learning platform: users authenticate, instructors create courses and lessons, students browse and enroll in courses, students learn through lesson content, and the system tracks learning progress. Administrators can monitor the whole system and manage user roles.
 
-The project is implemented as a complete full-stack web application. The front-end is built with React, Vite, React Router, and Tailwind CSS. The back-end is implemented with Supabase, which provides Authentication, PostgreSQL database access, REST API, Row Level Security, and Storage for course cover images. The system uses a relational database design with the main tables `profiles`, `courses`, `lessons`, `enrollments`, and `lesson_completions`. In addition to the database tables, a Supabase Storage bucket named `course-covers` is used for uploaded course images.
+The project is implemented as a complete full-stack web application. The front-end is built with React, Vite, React Router, and Tailwind CSS. The back-end is implemented with Supabase, which provides Authentication, PostgreSQL database access, REST API, database access policies, and Storage for course cover images. The system uses a relational database design with the main tables `profiles`, `courses`, `lessons`, `enrollments`, and `lesson_completions`. In addition to the database tables, a Supabase Storage bucket named `course-covers` is used for uploaded course images.
 
-The system supports three roles. Students can browse a catalog, search and filter courses, view course details, enroll, learn lessons, and mark lessons complete. Instructors can create, update, delete, and preview their own courses. Administrators can view system statistics and update user roles. The access control is enforced not only in the React interface but also at database level with PostgreSQL Row Level Security policies.
+The system supports three roles. Students can browse a catalog, search and filter courses, view course details, enroll, learn lessons, and mark lessons complete. Instructors can create, update, delete, and preview their own courses. Administrators can view system statistics and update user roles. Access control is enforced not only in the React interface but also through database-level access policies.
 
 The final result is a working academic LMS prototype with real authentication, real database relationships, role-based access, file upload for course cover images, learning progress tracking, demo accounts, seed data, and a report with analysis, design diagrams, database explanation, implementation details, testing scenarios, and defense preparation questions.
 
@@ -46,7 +46,6 @@ The final result is a working academic LMS prototype with real authentication, r
 | REST | Representational State Transfer |
 | SQL | Structured Query Language |
 | DBMS | Database Management System |
-| RLS | Row Level Security |
 | RBAC | Role-Based Access Control |
 | CRUD | Create, Read, Update, Delete |
 | UUID | Universally Unique Identifier |
@@ -83,11 +82,15 @@ The final result is a working academic LMS prototype with real authentication, r
 | Table 2.3 | Non-functional requirements |
 | Table 2.4 | Use case summary |
 | Table 2.5 | Database table summary |
-| Table 2.6 | Row Level Security policy summary |
-| Table 3.1 | Main routes |
-| Table 3.2 | Demo accounts |
-| Table 3.3 | Practical testing scenarios |
-| Table 3.4 | Requirement completion mapping |
+| Table 2.6 | Database access policy summary |
+| Table 3.1 | Development tools |
+| Table 3.2 | Database preparation results |
+| Table 3.3 | Seed data summary |
+| Table 3.4 | Demo accounts |
+| Table 3.5 | Main routes |
+| Table 3.6 | Implementation result by module |
+| Table 3.7 | Practical testing checklist |
+| Table 3.8 | Requirement completion mapping |
 
 # Introduction
 
@@ -112,7 +115,7 @@ A course management system must solve several practical problems:
 - The system must prevent users from performing actions outside their roles.
 - The database must keep learning progress consistent.
 
-A simple interface alone is not enough. If the project only displays static course cards, it is not a complete web application. MiniLMS therefore includes a real Supabase database, authentication, Row Level Security, database triggers, and file upload through Supabase Storage. This makes the system more realistic and gives enough technical content for a defense.
+A simple interface alone is not enough. If the project only displays static course cards, it is not a complete web application. MiniLMS therefore includes a real Supabase database, authentication, database access policies, database triggers, and file upload through Supabase Storage. This makes the system more realistic and gives enough technical content for a defense.
 
 ## 3. Project Aims
 
@@ -122,7 +125,7 @@ The project aims to achieve the following objectives:
 - Implement a React single page application with protected routes.
 - Integrate Supabase Authentication for sign up and sign in.
 - Design a PostgreSQL database with relationships, constraints, and indexes.
-- Apply Row Level Security for role-based data access.
+- Apply database access policies for role-based data access.
 - Implement course catalog with search and filters.
 - Implement course metadata: category, level, duration, skills, and outcomes.
 - Implement course cover image upload using Supabase Storage.
@@ -146,7 +149,7 @@ The project includes the following modules:
 - Course editor with image upload and curriculum management.
 - Lesson player with lesson navigation and progress update.
 - Admin panel with statistics and user role management.
-- Database schema and RLS policies.
+- Database schema and access policies.
 - Supabase Storage bucket for course cover images.
 - Demo seed data and documentation.
 
@@ -157,7 +160,7 @@ The project does not include payment, certificate generation, quizzes, assignmen
 The report is organized into four main chapters:
 
 - Chapter 1 introduces the theoretical basis and tools used in the project.
-- Chapter 2 presents system analysis and design, including requirements, use cases, activity diagrams, sequence diagrams, database design, and RLS policy design.
+- Chapter 2 presents system analysis and design, including requirements, use cases, activity diagrams, sequence diagrams, database design, and database access policy design.
 - Chapter 3 describes setup, implementation, practical results, testing, and demo preparation.
 - Chapter 4 concludes the project and proposes future work.
 
@@ -189,14 +192,14 @@ The client-server separation creates clear responsibilities:
 - The client renders the interface and collects user input.
 - Supabase Authentication verifies user identity.
 - Supabase REST API provides database access.
-- PostgreSQL stores data and enforces RLS policies.
+- PostgreSQL stores data and enforces database access rules.
 - Supabase Storage stores uploaded course cover images.
 
 ## 1.3 Single Page Application
 
 MiniLMS is a Single Page Application. The browser loads the application once and React Router changes views without reloading the whole page. This approach is suitable for dashboard applications because users frequently move between dashboard, catalog, course detail, editor, lesson player, and administration pages.
 
-The SPA model improves user experience but also requires route protection. MiniLMS uses protected routes to redirect unauthorized users. However, the project does not rely only on frontend protection. The database still enforces the final access rules using RLS.
+The SPA model improves user experience but also requires route protection. MiniLMS uses protected routes to redirect unauthorized users. However, the project does not rely only on frontend protection. The database still enforces final access rules for important operations.
 
 ## 1.4 React
 
@@ -230,11 +233,11 @@ PostgreSQL is used as the relational database. The main benefit of a relational 
 
 Foreign keys, unique constraints, and indexes keep the data consistent. This is important because the project is not only a user interface; it also demonstrates proper database modeling.
 
-## 1.9 Row Level Security
+## 1.9 Database Access Control
 
-Row Level Security is a PostgreSQL feature that controls which rows a user can access. In MiniLMS, RLS is essential because the frontend uses Supabase client APIs. Without RLS, a user could manually call the API and try to access data outside their role.
+Database access control defines which authenticated user can read or modify each group of data. In MiniLMS, this is important because the frontend calls Supabase APIs directly. Without database-level checks, a user could try to call the API outside the intended interface.
 
-MiniLMS applies RLS policies to all major tables. Examples include:
+MiniLMS applies role-based database policies to all major tables. Examples include:
 
 - Students can insert enrollments only for themselves.
 - Students can insert lesson completion only for their own account and enrolled courses.
@@ -259,10 +262,9 @@ Table 1.1 Technology stack
 | Build tool | Vite | Local development and production build |
 | Styling | Tailwind CSS | Responsive utility-based interface styling |
 | Routing | React Router | Page routing and protected views |
-| Icons | Lucide React | Simple functional icons |
 | Backend platform | Supabase | Auth, REST API, Storage, database access |
 | Database | PostgreSQL | Relational storage and SQL logic |
-| Security | Row Level Security | Database-level authorization |
+| Security | Database access policies | Database-level authorization |
 | File storage | Supabase Storage | Course cover image upload |
 | Documentation diagrams | Mermaid | UML-style diagrams in Markdown |
 | Version control | Git | Source code management |
@@ -324,35 +326,7 @@ Table 2.3 Non-functional requirements
 
 Figure 2.1 Overall system architecture
 
-```mermaid
-flowchart TB
-  User[User Browser]
-  React[React SPA]
-  Router[React Router]
-  AuthContext[Auth Context]
-  SupabaseClient[Supabase JS Client]
-  Auth[Supabase Authentication]
-  Rest[Supabase REST API]
-  Storage[Supabase Storage]
-  Bucket[(course-covers Bucket)]
-  RLS[Row Level Security]
-  DB[(PostgreSQL Database)]
-  Triggers[Database Triggers]
-
-  User --> React
-  React --> Router
-  React --> AuthContext
-  AuthContext --> SupabaseClient
-  Router --> SupabaseClient
-  SupabaseClient --> Auth
-  SupabaseClient --> Rest
-  SupabaseClient --> Storage
-  Storage --> Bucket
-  Rest --> RLS
-  RLS --> DB
-  DB --> Triggers
-  Triggers --> DB
-```
+![Overall system architecture](uml/01_architecture.png)
 
 The architecture has two important ideas. First, the frontend is responsible for user interaction but not final security. Second, PostgreSQL and Supabase enforce the backend rules. This means the project can be defended as a real full-stack application, not only a static React interface.
 
@@ -360,68 +334,7 @@ The architecture has two important ideas. First, the frontend is responsible for
 
 Figure 2.2 Use case diagram
 
-```mermaid
-flowchart LR
-  Guest((Guest))
-  Student((Student))
-  Instructor((Instructor))
-  Admin((Administrator))
-
-  UC1[Sign up]
-  UC2[Sign in]
-  UC3[View dashboard]
-  UC4[Browse catalog]
-  UC5[Search and filter courses]
-  UC6[View course detail]
-  UC7[Enroll in course]
-  UC8[Open lesson player]
-  UC9[Mark lesson complete]
-  UC10[View progress]
-  UC11[Create course]
-  UC12[Upload cover image]
-  UC13[Edit course metadata]
-  UC14[Manage lessons]
-  UC15[Preview course]
-  UC16[Delete course]
-  UC17[View statistics]
-  UC18[Update user role]
-
-  Guest --> UC1
-  Guest --> UC2
-
-  Student --> UC3
-  Student --> UC4
-  Student --> UC5
-  Student --> UC6
-  Student --> UC7
-  Student --> UC8
-  Student --> UC9
-  Student --> UC10
-
-  Instructor --> UC3
-  Instructor --> UC4
-  Instructor --> UC5
-  Instructor --> UC6
-  Instructor --> UC11
-  Instructor --> UC12
-  Instructor --> UC13
-  Instructor --> UC14
-  Instructor --> UC15
-  Instructor --> UC16
-
-  Admin --> UC3
-  Admin --> UC4
-  Admin --> UC5
-  Admin --> UC6
-  Admin --> UC11
-  Admin --> UC12
-  Admin --> UC13
-  Admin --> UC14
-  Admin --> UC15
-  Admin --> UC16
-  Admin --> UC17
-  Admin --> UC18
-```
+![Use case diagram](uml/02_use_case_diagram.png)
 
 ## 2.6 Use Case Summary
 
@@ -442,77 +355,19 @@ Table 2.4 Use case summary
 
 Figure 2.3 Student learning activity diagram
 
-```mermaid
-flowchart TD
-  A[Start] --> B[Sign in]
-  B --> C[Open course catalog]
-  C --> D[Search or filter courses]
-  D --> E[Open course detail]
-  E --> F{Already enrolled?}
-  F -- No --> G[Click enroll]
-  G --> H[Create enrollment]
-  F -- Yes --> I[Open lesson player]
-  H --> I
-  I --> J[Choose lesson]
-  J --> K[Watch lesson or read notes]
-  K --> L{Mark complete?}
-  L -- No --> J
-  L -- Yes --> M[Insert lesson completion]
-  M --> N[Trigger recalculates progress]
-  N --> O{All lessons completed?}
-  O -- No --> P[Move to next lesson]
-  P --> J
-  O -- Yes --> Q[Show completed status]
-  Q --> R[End]
-```
+![Student learning activity diagram](uml/03_activity_student_learning.png)
 
 ### 2.7.2 Instructor Course Authoring Activity
 
 Figure 2.4 Instructor course authoring activity diagram
 
-```mermaid
-flowchart TD
-  A[Start] --> B[Sign in as instructor]
-  B --> C[Open course management]
-  C --> D{Create or edit?}
-  D -- Create --> E[Open create course page]
-  D -- Edit --> F[Load existing course]
-  E --> G[Enter title and description]
-  F --> G
-  G --> H[Choose category, level, duration]
-  H --> I[Enter skills and outcomes]
-  I --> J{Need cover image?}
-  J -- Yes --> K[Drag or choose image]
-  K --> L[Upload to course-covers bucket]
-  L --> M[Store public URL]
-  J -- No --> N[Use existing or external URL]
-  M --> O[Add lessons]
-  N --> O
-  O --> P[Save course]
-  P --> Q[Save lesson list]
-  Q --> R[Return to management page]
-  R --> S[End]
-```
+![Instructor course authoring activity diagram](uml/04_activity_instructor_course_authoring.png)
 
 ### 2.7.3 Administrator Role Management Activity
 
 Figure 2.5 Administrator role management activity diagram
 
-```mermaid
-flowchart TD
-  A[Start] --> B[Sign in as administrator]
-  B --> C[Open administration]
-  C --> D[View overview statistics]
-  D --> E[Open users tab]
-  E --> F[Select user]
-  F --> G{Is current admin?}
-  G -- Yes --> H[Block self role change]
-  G -- No --> I[Choose new role]
-  I --> J[Update profile role]
-  J --> K[Refresh user list]
-  H --> K
-  K --> L[End]
-```
+![Administrator role management activity diagram](uml/05_activity_admin_role_management.png)
 
 ## 2.8 Sequence Diagrams
 
@@ -520,82 +375,19 @@ flowchart TD
 
 Figure 2.6 Authentication sequence diagram
 
-```mermaid
-sequenceDiagram
-  actor User
-  participant AuthPage as Auth Page
-  participant SupabaseAuth as Supabase Auth
-  participant DB as PostgreSQL
-  participant Context as Auth Context
-  participant Dashboard as Dashboard
-
-  User->>AuthPage: Submit email and password
-  AuthPage->>SupabaseAuth: signInWithPassword()
-  SupabaseAuth-->>AuthPage: Return session
-  AuthPage->>Context: Update active user
-  Context->>DB: Select profile by user id
-  DB-->>Context: Return full_name and role
-  Context-->>Dashboard: Provide profile
-  Dashboard-->>User: Render role-based dashboard
-```
+![Authentication sequence diagram](uml/06_sequence_authentication.png)
 
 ### 2.8.2 Course Authoring and Image Upload Sequence
 
 Figure 2.7 Course authoring and image upload sequence diagram
 
-```mermaid
-sequenceDiagram
-  actor Instructor
-  participant Editor as Course Editor
-  participant Storage as Supabase Storage
-  participant API as Supabase REST API
-  participant RLS as RLS Policies
-  participant DB as PostgreSQL
-
-  Instructor->>Editor: Drag or choose image file
-  Editor->>Storage: Upload file to course-covers bucket
-  Storage-->>Editor: Return public image URL
-  Instructor->>Editor: Enter title, metadata, outcomes, lessons
-  Instructor->>Editor: Click Save changes
-  Editor->>API: Insert or update course record
-  API->>RLS: Check instructor or admin permission
-  RLS->>DB: Allow course write
-  DB-->>API: Course saved
-  Editor->>API: Save lesson records
-  API->>RLS: Check course ownership
-  RLS->>DB: Allow lesson write
-  DB-->>Editor: Save success
-```
+![Course authoring and image upload sequence diagram](uml/07_sequence_course_authoring_upload.png)
 
 ### 2.8.3 Enrollment and Progress Sequence
 
 Figure 2.8 Enrollment and progress tracking sequence diagram
 
-```mermaid
-sequenceDiagram
-  actor Student
-  participant Detail as Course Detail
-  participant Player as Lesson Player
-  participant API as Supabase REST API
-  participant DB as PostgreSQL
-  participant Trigger as Progress Trigger
-
-  Student->>Detail: Click Enroll
-  Detail->>API: Insert enrollment
-  API->>DB: Add row to enrollments
-  DB-->>Detail: Enrollment created
-  Student->>Player: Open lesson player
-  Player->>API: Select lessons and completions
-  API->>DB: Query course learning data
-  DB-->>Player: Return lessons and progress
-  Student->>Player: Mark lesson complete
-  Player->>API: Upsert lesson_completions row
-  API->>DB: Insert completion
-  DB->>Trigger: Run recalculate_course_progress()
-  Trigger->>DB: Update enrollments.progress
-  DB-->>Player: Success
-  Player-->>Student: Show updated progress
-```
+![Enrollment and progress tracking sequence diagram](uml/08_sequence_enrollment_progress.png)
 
 ## 2.9 Database Design
 
@@ -613,78 +405,7 @@ The storage bucket is:
 
 Figure 2.9 Database entity relationship diagram
 
-```mermaid
-erDiagram
-  AUTH_USERS ||--|| PROFILES : owns
-  PROFILES ||--o{ COURSES : teaches
-  COURSES ||--o{ LESSONS : contains
-  PROFILES ||--o{ ENROLLMENTS : enrolls
-  COURSES ||--o{ ENROLLMENTS : receives
-  PROFILES ||--o{ LESSON_COMPLETIONS : completes
-  COURSES ||--o{ LESSON_COMPLETIONS : groups
-  LESSONS ||--o{ LESSON_COMPLETIONS : records
-
-  AUTH_USERS {
-    uuid id PK
-    text email
-    timestamptz email_confirmed_at
-    jsonb raw_user_meta_data
-  }
-
-  PROFILES {
-    uuid id PK,FK
-    text full_name
-    text role
-    text avatar_url
-    timestamptz created_at
-    timestamptz updated_at
-  }
-
-  COURSES {
-    uuid id PK
-    text title
-    text description
-    uuid instructor_id FK
-    text thumbnail_url
-    text category
-    text level
-    text duration
-    text_array skills
-    text_array learning_outcomes
-    timestamptz created_at
-    timestamptz updated_at
-  }
-
-  LESSONS {
-    uuid id PK
-    uuid course_id FK
-    text title
-    text description
-    text video_url
-    text content_url
-    integer order_index
-    timestamptz created_at
-    timestamptz updated_at
-  }
-
-  ENROLLMENTS {
-    uuid id PK
-    uuid student_id FK
-    uuid course_id FK
-    integer progress
-    boolean completed
-    timestamptz enrolled_at
-    timestamptz updated_at
-  }
-
-  LESSON_COMPLETIONS {
-    uuid id PK
-    uuid student_id FK
-    uuid lesson_id FK
-    uuid course_id FK
-    timestamptz completed_at
-  }
-```
+![Database entity relationship diagram](uml/09_erd.png)
 
 ## 2.10 Database Table Summary
 
@@ -728,9 +449,9 @@ The project uses several PostgreSQL functions and triggers:
 
 The most important business logic trigger is `recalculate_course_progress()`. It counts the number of lessons in a course and the number of completed lessons for a student. The result is stored in `enrollments.progress`. This keeps progress consistent with detailed completion records.
 
-## 2.13 Row Level Security Policy Design
+## 2.13 Database Access Policy Design
 
-Table 2.6 Row Level Security policy summary
+Table 2.6 Database access policy summary
 
 | Table or bucket | Operation | Rule summary |
 | --- | --- | --- |
@@ -770,92 +491,113 @@ The interface is influenced by common online course platform patterns: course ca
 
 # Chapter 3. Setup and Practical Results
 
-## 3.1 Project Structure
+## 3.1 Development Environment
 
-```text
-Mini_Learning_Management_System/
-  docs/
-    MiniLMS_Report.md
-    Defense_Guide_vi.md
-  public/
-    favicon.svg
-  src/
-    components/
-      CourseCard.jsx
-      CourseCover.jsx
-      Layout.jsx
-      ProtectedRoute.jsx
-    context/
-      AuthContext.jsx
-    lib/
-      supabaseClient.js
-    pages/
-      AdminPanel.jsx
-      Auth.jsx
-      CourseDetail.jsx
-      CourseEditor.jsx
-      CourseList.jsx
-      Dashboard.jsx
-      LessonView.jsx
-      ManageCourses.jsx
-    App.jsx
-    index.css
-    main.jsx
-  supabase/
-    schema.sql
-  seed.js
-  README.md
-  package.json
-```
+MiniLMS was developed as a web application with React on the frontend and Supabase as the backend service. The development environment was selected to support fast local testing, simple deployment preparation, and a clear demonstration process. The application can be run locally through Vite, while all persistent data is stored in Supabase PostgreSQL and Supabase Storage.
 
-## 3.2 Environment Setup
+Table 3.1 Development tools
 
-The project uses environment variables stored in `.env.local`. The required variables are:
+| Tool / Technology | Purpose |
+| --- | --- |
+| Node.js | JavaScript runtime for development tools |
+| npm | Dependency installation and script execution |
+| React | Frontend user interface development |
+| Vite | Local development server and production build tool |
+| React Router | Page routing and protected route organization |
+| Tailwind CSS | Interface styling and responsive layout |
+| Supabase JS SDK | Authentication, database query, and storage communication |
+| PostgreSQL | Cloud relational database |
+| Supabase Storage | Course cover image storage |
+| ESLint | Source code checking |
+| GitHub | Source code management and submission |
 
-```env
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-DATABASE_PASSWORD=your_database_password
-```
-
-The `.env.local` file is not committed to the repository. The `.env.example` file documents which values are required.
-
-## 3.3 Install and Run
-
-Install dependencies:
+Basic setup commands:
 
 ```bash
 npm ci
-```
-
-Run development server:
-
-```bash
 npm run dev
 ```
 
-Run lint:
+Quality verification commands:
 
 ```bash
 npm run lint
-```
-
-Run production build:
-
-```bash
 npm run build
 ```
 
-Seed demo data:
+Demo data command:
 
 ```bash
 node seed.js
 ```
 
-## 3.4 Main Routes
+The development environment is simple enough for a student project but still represents a real full-stack workflow. React handles the presentation layer. Supabase handles authentication, database operations, and image storage. PostgreSQL stores structured data such as users, courses, lessons, enrollments, and lesson completions.
 
-Table 3.1 Main routes
+## 3.2 Database and Storage Preparation
+
+The database was prepared by executing the SQL script in `supabase/schema.sql`. The script creates the required tables, relationships, constraints, triggers, storage bucket, and access rules. The database design follows the ERD described in Chapter 2.
+
+The main tables are:
+
+- `profiles`
+- `courses`
+- `lessons`
+- `enrollments`
+- `lesson_completions`
+
+The storage bucket is:
+
+- `course-covers`
+
+Table 3.2 Database preparation results
+
+| Item | Result |
+| --- | --- |
+| `profiles` table | Stores application profile and role information |
+| `courses` table | Stores course metadata, cover URL, skills, and outcomes |
+| `lessons` table | Stores ordered lesson content |
+| `enrollments` table | Stores student-course relationship and progress |
+| `lesson_completions` table | Stores detailed completed lesson records |
+| `course-covers` bucket | Stores uploaded course cover images |
+| Foreign keys | Keep relationships between users, courses, lessons, and learning records |
+| Unique constraints | Prevent duplicate enrollments and duplicate lesson completions |
+| Triggers | Create profiles, update timestamps, and recalculate progress |
+
+Several constraints are important for data consistency. A course must belong to an instructor. A lesson must belong to a course. An enrollment must connect one student with one course. A lesson completion must connect one student, one course, and one lesson. The unique constraint on `(student_id, course_id)` prevents a student from enrolling in the same course more than once. The unique constraint on `(student_id, lesson_id)` prevents duplicate completion records for the same lesson.
+
+The project also uses cascade relationships. When a course is deleted, related lessons, enrollments, and lesson completion records are removed automatically. This keeps the database clean and prevents orphaned data.
+
+## 3.3 Seed Data Preparation
+
+The seed script was created to make the project demo stable and repeatable. Instead of manually creating accounts and courses before every presentation, `seed.js` prepares demo users, course data, lessons, and student progress.
+
+Table 3.3 Seed data summary
+
+| Data type | Prepared content |
+| --- | --- |
+| Users | Administrator, Instructor, Student |
+| Courses | Four demo courses |
+| Course metadata | Category, level, duration, skills, learning outcomes |
+| Lessons | Ordered lessons for each demo course |
+| Enrollments | Student enrollments for selected courses |
+| Progress data | Lesson completion records for progress display |
+| Cover images | Neutral placeholders by default; uploaded images can be added in demo |
+
+Table 3.4 Demo accounts
+
+| Role | Email | Password |
+| --- | --- | --- |
+| Administrator | `admin@example.com` | `password123` |
+| Instructor | `instructor@example.com` | `password123` |
+| Student | `student@example.com` | `password123` |
+
+The seed data was designed to support all important defense flows. The administrator account demonstrates system management. The instructor account demonstrates course creation, editing, image upload, and lesson management. The student account demonstrates catalog browsing, enrollment, lesson learning, and progress tracking.
+
+## 3.4 Application Routing
+
+The application uses React Router to organize pages. Routes are separated by role and purpose. Public users can access the authentication page. After signing in, users can access protected routes according to their role.
+
+Table 3.5 Main routes
 
 | Route | Page | Access |
 | --- | --- | --- |
@@ -869,140 +611,296 @@ Table 3.1 Main routes
 | `/manage-courses/edit/:id` | Edit course | Course owner or admin |
 | `/admin` | Administration panel | Admin only |
 
-## 3.5 Demo Accounts
+Route protection has two purposes. First, it improves user experience because users do not see pages that are not relevant to their role. Second, it gives a clear demonstration of role separation. For example, a student cannot open the administration page, while an instructor can open course management but not the administrator user table.
 
-Table 3.2 Demo accounts
+## 3.5 Authentication and Role-Based Interface
 
-| Role | Email | Password |
-| --- | --- | --- |
-| Administrator | `admin@example.com` | `password123` |
-| Instructor | `instructor@example.com` | `password123` |
-| Student | `student@example.com` | `password123` |
+The authentication module is implemented with Supabase Authentication and a React authentication context. The login page allows users to sign in with email and password. After successful login, the application loads the user's profile from the `profiles` table.
 
-## 3.6 Authentication Result
+The sign-in process follows this workflow:
 
-The authentication page supports sign in and sign up. The page is intentionally simple. It shows demo accounts for quick testing and avoids a large decorative hero panel. After sign in, the app loads the user's profile and redirects to the dashboard.
+1. The user enters email and password.
+2. The frontend sends the credentials to Supabase Authentication.
+3. Supabase returns a session if the credentials are valid.
+4. The application loads the corresponding profile.
+5. The interface renders navigation and dashboard content based on the user's role.
+
+The role-based interface is implemented in the layout and protected route logic. Students see student learning functions. Instructors see course management functions. Administrators see administration functions. This separation makes the system easier to explain during defense because each role has a clear responsibility.
 
 Figure 3.1 Sign in page screenshot placeholder
 
 Insert screenshot here after formatting in Word.
 
-## 3.7 Course Catalog Result
+## 3.6 Course Catalog Implementation
 
-The catalog page displays course cards with image, category, instructor, title, description, level, duration, skills, lesson count, and a link to detail. The search input matches title, description, instructor, category, level, and skills. The category and level filters allow users to narrow course results.
+The course catalog is the main entry point for learners. It displays available courses and supports search and filtering. The search feature checks multiple fields: course title, description, instructor name, category, level, and skills. This makes the catalog more practical than a static course list.
+
+The course catalog item includes:
+
+- Course title.
+- Instructor name.
+- Course category.
+- Course level.
+- Duration.
+- Lesson count.
+- Short description.
+- Skills.
+- Course cover or neutral placeholder.
+- Detail action.
+
+The interface uses a list-based layout rather than a decorative card grid. This design was selected to make the system look like a practical internal LMS. It also helps users scan course information quickly.
+
+When no uploaded image exists, MiniLMS shows a neutral course placeholder. This avoids random stock image dependency and keeps the visual style consistent. If an instructor uploads a real course image, the uploaded image is shown in the catalog and course detail page.
 
 Figure 3.2 Course catalog screenshot placeholder
 
 Insert screenshot here after formatting in Word.
 
-## 3.8 Course Editor Result
+## 3.7 Course Management Implementation
 
-The course editor is one of the strongest practical features. It allows instructors to enter:
+The course management module is designed for instructors and administrators. Instructors can manage their own courses. Administrators can view and manage all courses. The page uses a table because management tasks require comparison between records.
 
-- Course title.
+The management table displays:
+
+- Course title and description.
+- Course cover.
+- Category.
+- Level.
+- Number of lessons.
+- Number of students.
+- Updated date.
+- Preview, edit, and delete actions.
+
+This implementation supports the main instructor workflow. The instructor can open course management, choose a course, edit course information, update lessons, upload a cover image, and preview the final course page. The delete function is also available. When a course is deleted, dependent data is handled by database relationships.
+
+The course management module is important because it proves that the system supports content authoring, not only course viewing.
+
+## 3.8 Course Editor Implementation
+
+The course editor is the main authoring screen. It allows the instructor to define both course-level information and lesson-level content.
+
+The course information section includes:
+
+- Title.
 - Description.
 - Category.
 - Level.
 - Duration.
 - Skills.
 - Learning outcomes.
-- Cover image by drag-and-drop or file picker.
-- External cover image URL if needed.
-- Lesson titles.
-- Lesson video URLs.
-- Lesson notes.
 
-The image upload workflow stores files in Supabase Storage. The public URL is saved to `courses.thumbnail_url`.
+The curriculum section allows the instructor to add, update, and remove lessons. Each lesson includes title, video URL, and lesson note. Lessons are saved with an `order_index` so the lesson player can display content in the correct sequence.
+
+The cover image section supports two input methods:
+
+- Drag and drop image file.
+- Choose image file from local computer.
+
+The image upload process validates the file before uploading:
+
+- The file must be an image.
+- The file size must be under 5 MB.
+- The user must be authenticated.
+
+After validation, the image is uploaded to the `course-covers` storage bucket. Supabase returns a public URL, and the URL is saved into `courses.thumbnail_url`. This result proves that the system handles real file upload, not only text data.
 
 Figure 3.3 Course editor screenshot placeholder
 
 Insert screenshot here after formatting in Word.
 
-## 3.9 Course Detail Result
+## 3.9 Course Detail Implementation
 
-The course detail page displays course metadata and learning value clearly. It shows category, level, duration, instructor, updated date, skills, learning outcomes, course image, enrollment action, and lesson list. This helps the student understand the course before enrolling.
+The course detail page presents course information before enrollment. The page is intentionally structured like an academic course information page rather than a commercial landing page.
+
+The course detail page displays:
+
+- Course title.
+- Description.
+- Instructor.
+- Category.
+- Level.
+- Duration.
+- Updated date.
+- Lesson count.
+- Learning outcomes.
+- Skills.
+- Lesson outline.
+- Enrollment or continue learning action.
+
+If the current user is a student and has not enrolled, the page shows the enroll button. If the student has already enrolled, the page shows progress and a continue learning action. If the current user is the course instructor or an administrator, the course can be previewed without creating student progress.
 
 Figure 3.4 Course detail screenshot placeholder
 
 Insert screenshot here after formatting in Word.
 
-## 3.10 Lesson Player Result
+## 3.10 Learning Workflow Implementation
 
-The lesson player shows video content, current lesson title, progress bar, previous/next navigation, mark complete action, and a course outline panel. For instructors and admins, the player runs in preview mode. For students, completion updates are saved to the database.
+The learning workflow connects course enrollment, lesson viewing, lesson completion, and progress tracking. It is the most important student workflow in the system.
+
+The student learning process is:
+
+1. Student opens course detail.
+2. Student enrolls in the course.
+3. The system creates an enrollment record.
+4. Student opens the lesson player.
+5. The system loads lessons and completed lesson records.
+6. Student watches or reads lesson content.
+7. Student marks a lesson complete.
+8. The system inserts a record into `lesson_completions`.
+9. The database trigger recalculates course progress.
+10. The interface shows the updated progress.
+
+The lesson player contains the video display area, current lesson information, lesson notes, previous and next controls, mark complete action, and course outline. For students, progress is saved. For instructors and administrators, the screen runs in preview mode.
 
 Figure 3.5 Lesson player screenshot placeholder
 
 Insert screenshot here after formatting in Word.
 
-## 3.11 Administration Result
+## 3.11 Administration Implementation
 
-The administration page shows system statistics and user role management. It displays total users, total courses, total enrollments, completed enrollments, user distribution, and learning statistics. The admin can update another user's role, but self role change is blocked.
+The administration module supports system-level management. It is available only to administrators. The page shows summary statistics, role distribution, and a user table.
+
+The administration page includes:
+
+- Total users.
+- Total courses.
+- Total enrollments.
+- Completed enrollments.
+- Role distribution.
+- User list.
+- Role update dropdown.
+
+The administrator can change another user's role. The system blocks the current administrator from changing their own role. This prevents accidental loss of administrator access during operation or demonstration.
+
+This module completes the three-role requirement of the system. Students learn, instructors manage courses, and administrators manage the platform.
 
 Figure 3.6 Administration page screenshot placeholder
 
 Insert screenshot here after formatting in Word.
 
-## 3.12 Practical Testing Scenarios
+## 3.12 Supabase Integration
 
-Table 3.3 Practical testing scenarios
+Supabase is used as the backend platform for three main purposes: authentication, database access, and file storage.
 
-| ID | Scenario | Steps | Expected result | Status |
-| --- | --- | --- | --- | --- |
-| T01 | Admin login | Sign in as admin | Admin dashboard and Administration menu appear | Passed |
-| T02 | Instructor login | Sign in as instructor | Course Management menu appears | Passed |
-| T03 | Student login | Sign in as student | Student dashboard and enrolled courses appear | Passed |
-| T04 | Search courses | Search keyword in catalog | Matching courses are displayed | Passed |
-| T05 | Filter courses | Select category or level | Catalog results update | Passed |
-| T06 | Upload cover image | Drag or choose an image in Course Editor | Image uploads and preview appears | Passed |
-| T07 | Create course | Enter metadata, image, lessons, save | Course appears in management page | Passed |
-| T08 | View course detail | Open course detail | Metadata, skills, outcomes, lessons appear | Passed |
-| T09 | Enroll | Student clicks Enroll | Enrollment row is created | Passed |
-| T10 | Complete lesson | Student marks lesson complete | Progress increases | Passed |
-| T11 | Admin role update | Admin changes another user's role | Role updates in profile table | Passed |
-| T12 | Unauthorized admin access | Student opens admin route | Student is redirected | Passed |
+Authentication is used for sign in, sign up, sign out, and session management. After authentication, the application uses the user id to load profile information and determine the user role.
 
-## 3.13 Requirement Completion Mapping
+Database access is used for all application data. The frontend reads and writes data through Supabase queries. Important operations include:
 
-Table 3.4 Requirement completion mapping
+- Loading user profile.
+- Loading course catalog.
+- Creating and updating courses.
+- Creating lessons.
+- Creating enrollments.
+- Saving lesson completions.
+- Updating user roles.
+
+Storage is used for course cover images. The editor uploads image files to `course-covers`, then stores the public URL in the course record. This separates binary file storage from structured database data.
+
+The Supabase integration makes MiniLMS a real full-stack system. The frontend is not using mock data. All important data is persisted and can be inspected in the Supabase dashboard.
+
+## 3.13 Implementation Result by Module
+
+Table 3.6 Implementation result by module
+
+| Module | Implementation result |
+| --- | --- |
+| Authentication | Sign in, sign up, sign out, profile loading |
+| Dashboard | Role-based dashboard for student, instructor, and administrator |
+| Course catalog | Course list, search, category filter, level filter |
+| Course detail | Metadata, outcomes, skills, lesson outline, enrollment panel |
+| Course management | Table-based course management with preview, edit, delete |
+| Course editor | Metadata form, curriculum editor, cover image upload |
+| Lesson player | Video area, lesson outline, navigation, mark complete |
+| Progress tracking | Completion records and automatic progress recalculation |
+| Administration | Statistics, role distribution, user role update |
+| Supabase Storage | Course cover image upload and public URL storage |
+| Seed data | Demo accounts, courses, lessons, enrollments, progress |
+
+## 3.14 Practical Testing
+
+The system was tested through the main demo workflows. The goal of testing was to verify that the application works correctly for all three roles and that database operations persist successfully.
+
+Table 3.7 Practical testing checklist
+
+| ID | Test case | Expected result | Status |
+| --- | --- | --- | --- |
+| T01 | Sign in as administrator | Administrator dashboard and Admin menu appear | Passed |
+| T02 | Sign in as instructor | Course Management menu appears | Passed |
+| T03 | Sign in as student | Student dashboard and learning progress appear | Passed |
+| T04 | Search course catalog | Matching courses are displayed | Passed |
+| T05 | Filter catalog by category or level | Course list updates correctly | Passed |
+| T06 | Open course detail | Metadata, outcomes, skills, and lessons appear | Passed |
+| T07 | Enroll in course | Enrollment record is created | Passed |
+| T08 | Open lesson player | Lesson content and outline are displayed | Passed |
+| T09 | Mark lesson complete | Completion is saved and progress increases | Passed |
+| T10 | Open instructor course management | Instructor courses are displayed | Passed |
+| T11 | Upload course cover image | Image is uploaded and preview is updated | Passed |
+| T12 | Create or edit course | Course data is saved to database | Passed |
+| T13 | Delete course | Course and related records are removed | Passed |
+| T14 | Update user role as admin | User role is updated | Passed |
+| T15 | Try unauthorized admin access as student | Student is redirected | Passed |
+| T16 | Run production build | Build completes successfully | Passed |
+
+The strongest test cases are enrollment, lesson completion, cover image upload, and role update. These actions prove that the system is interactive and data-driven. They also provide strong points for live demonstration because the examiner can see the interface action and the corresponding database result.
+
+## 3.15 Requirement Completion Mapping
+
+Table 3.8 Requirement completion mapping
 
 | Requirement | Implementation result |
 | --- | --- |
-| Authentication | Supabase Auth with sign in, sign up, sign out |
-| Profile and role | `profiles` table and automatic profile creation trigger |
-| Course catalog | CourseList page with search and filters |
-| Course metadata | Category, level, duration, skills, learning outcomes fields |
-| Image upload | Supabase Storage bucket `course-covers` and CourseEditor upload UI |
-| Course detail | CourseDetail page with outcomes, skills, metadata, lesson list |
-| Course management | ManageCourses and CourseEditor pages |
-| Lessons | `lessons` table and curriculum editor |
-| Enrollment | `enrollments` table and enroll action |
-| Progress tracking | `lesson_completions` table and progress trigger |
-| Admin statistics | AdminPanel overview and users tab |
-| Role security | Protected routes and Row Level Security policies |
-| Demo readiness | Seed script creates accounts, courses, lessons, enrollments |
+| Authentication | Implemented with Supabase Auth |
+| Role-based access | Implemented with profile roles and protected routes |
+| Student workflow | Catalog, enrollment, lesson player, progress |
+| Instructor workflow | Course management, editor, lesson management, image upload |
+| Administrator workflow | Statistics and user role management |
+| Course metadata | Category, level, duration, skills, outcomes |
+| Image upload | Storage bucket `course-covers` and public URL saving |
+| Progress tracking | `lesson_completions` and progress trigger |
+| Database design | Five main tables with foreign keys and constraints |
+| Demo stability | Seed script creates repeatable accounts and data |
+| Documentation | Report, UML diagrams, ERD, and defense guide |
 
-## 3.14 Verification Commands
+## 3.16 Recommended Live Demo Flow
 
-The project was verified with:
+The recommended live demo flow is:
 
-```bash
-npm run lint
-npm run build
-node seed.js
-```
+1. Briefly introduce the purpose of MiniLMS.
+2. Sign in as administrator.
+3. Show dashboard and administration statistics.
+4. Show user role distribution and role update function.
+5. Sign out and sign in as instructor.
+6. Open Course Management.
+7. Open Course Editor.
+8. Explain course metadata, outcomes, lessons, and cover image upload.
+9. Save and preview the course.
+10. Sign out and sign in as student.
+11. Open Course Catalog.
+12. Search or filter courses.
+13. Open Course Detail.
+14. Enroll or continue learning.
+15. Open Lesson Player.
+16. Mark one lesson complete and show progress update.
+17. If asked, open Supabase tables to explain the database design.
 
-The production build completed successfully. Vite may show a bundle size warning because the app imports front-end dependencies in one bundle, but this warning does not prevent the application from running.
+This order demonstrates the system from three perspectives: administrator, instructor, and student. It also shows the most important database operations in a natural sequence.
+
+## 3.17 Summary
+
+This chapter presented the setup and practical results of MiniLMS. The project was successfully implemented as a working full-stack web application. The system includes authentication, role-based interface, course catalog, course management, course editor, cover image upload, course detail, enrollment, lesson player, progress tracking, and administration.
+
+The practical results show that MiniLMS meets the main requirements of a small learning management system. The system uses a real database, real storage upload, prepared demo data, and persistent learning progress. The final implementation is stable enough for live demonstration and clear enough to explain during academic defense.
 
 # Chapter 4. Conclusion and Future Work
 
 ## 4.1 Conclusion
 
-MiniLMS successfully implements a complete small-scale Learning Management System. The project includes authentication, role-based access, course catalog, course management, course cover image upload, lesson management, enrollment, lesson player, progress tracking, and administration. The system uses a real PostgreSQL database with foreign keys, unique constraints, indexes, triggers, and Row Level Security policies.
+MiniLMS successfully implements a complete small-scale Learning Management System. The project includes authentication, role-based access, course catalog, course management, course cover image upload, lesson management, enrollment, lesson player, progress tracking, and administration. The system uses a real PostgreSQL database with foreign keys, unique constraints, indexes, triggers, and database access policies.
 
 The main technical strengths of the project are:
 
 - Clear three-role model: student, instructor, administrator.
-- Database-level security using RLS.
+- Database-level access control for role separation.
 - Learning progress calculated from detailed completion records.
 - Course editor with real image upload through Supabase Storage.
 - Course metadata that makes the catalog and detail page more realistic.
@@ -1052,9 +950,8 @@ Future improvements may include:
 5. Supabase Documentation. https://supabase.com/docs
 6. Supabase Authentication Documentation. https://supabase.com/docs/guides/auth
 7. Supabase Storage Documentation. https://supabase.com/docs/guides/storage
-8. Supabase Row Level Security Documentation. https://supabase.com/docs/guides/database/postgres/row-level-security
+8. Supabase Database Security Documentation. https://supabase.com/docs/guides/database/postgres/row-level-security
 9. PostgreSQL Documentation. https://www.postgresql.org/docs/
-10. Mermaid Documentation. https://mermaid.js.org/
 11. Udemy Teaching Center: Create your course landing page. https://teach.udemy.com/publishing/create-your-course-landing-page/
 12. Udemy Support: Course Image Quality Standards. https://support.udemy.com/hc/en-us/articles/229232347-Course-Image-Quality-Standards
 13. Moodle Docs: Course overview. https://docs.moodle.org/310/en/Course_overview
@@ -1067,11 +964,11 @@ MiniLMS is suitable because it combines many important software engineering topi
 
 ## A.2 Why did you use Supabase?
 
-Supabase provides Authentication, PostgreSQL, REST API, Storage, and Row Level Security. The project still requires backend design because I designed the database schema, relationships, constraints, triggers, RLS policies, and storage bucket policies. Supabase reduces infrastructure work but does not remove the need for system design.
+Supabase provides Authentication, PostgreSQL, REST API, Storage, and database security policies. The project still requires backend design because I designed the database schema, relationships, constraints, triggers, database policies, and storage bucket policies. Supabase reduces infrastructure work but does not remove the need for system design.
 
 ## A.3 Is frontend route protection enough?
 
-No. Frontend route protection improves user experience, but it is not the final security layer. A user can still try to call an API manually. The real protection is Row Level Security in PostgreSQL, where each database operation is checked by user identity and role.
+No. Frontend route protection improves user experience, but it is not the final security layer. A user can still try to call an API manually. The real protection is database access control in PostgreSQL, where each database operation is checked by user identity and role.
 
 ## A.4 How is course progress calculated?
 
@@ -1087,7 +984,7 @@ In Course Editor, the instructor drags an image or chooses a file. The frontend 
 
 ## A.7 Can an instructor edit another instructor's course?
 
-No. The RLS policy checks ownership using `instructor_id = auth.uid()`. Instructors can manage only their own courses. Admins have broader permission because they manage the whole system.
+No. The database policy checks ownership using `instructor_id = auth.uid()`. Instructors can manage only their own courses. Admins have broader permission because they manage the whole system.
 
 ## A.8 What happens if a course is deleted?
 
@@ -1095,7 +992,7 @@ Related lessons, enrollments, and lesson completion records are deleted through 
 
 ## A.9 What is the strongest part of the project?
 
-The strongest part is that the system combines a working user interface with real database security and real learning logic. The project has role-based flows, RLS policies, progress triggers, and file upload, so it can be explained from both user and technical perspectives.
+The strongest part is that the system combines a working user interface with real database security and real learning logic. The project has role-based flows, database policies, progress triggers, and file upload, so it can be explained from both user and technical perspectives.
 
 ## A.10 What would you improve next?
 
@@ -1119,7 +1016,7 @@ The next improvements would be quiz, assignment, certificate, discussion, lesson
 14. Enroll in a course.
 15. Open Lesson Player and mark a lesson complete.
 16. Show progress update.
-17. Open Supabase and explain tables, RLS, trigger, and storage bucket.
+17. Open Supabase and explain tables, trigger, storage bucket, and access rules.
 
 # Appendix C. Database Explanation for Defense
 
@@ -1127,4 +1024,4 @@ The database has five main public tables. `profiles` stores user role and displa
 
 The course cover image itself is stored in Supabase Storage. The database stores only the public URL. This keeps the database focused on structured data and lets Storage handle file content.
 
-The project uses RLS policies to protect data. For example, a student can insert only their own enrollment, and an instructor can update only courses they own. This means the security model does not depend only on hiding buttons in the interface.
+The project uses database policies to protect data. For example, a student can insert only their own enrollment, and an instructor can update only courses they own. This means the security model does not depend only on hiding buttons in the interface.

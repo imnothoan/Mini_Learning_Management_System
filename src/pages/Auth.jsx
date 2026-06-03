@@ -63,20 +63,13 @@ const Auth = () => {
           </h1>
           <p className="mt-2 text-sm leading-6 text-slate-500">
             {isSignUp
-              ? 'Register as a student or instructor for the project demo.'
-              : 'Use a demo account or your registered account to continue.'}
+              ? 'Register as a student or instructor'
+              : 'Use a account to continue.'}
           </p>
         </div>
 
         <div className="rounded-md border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
-          {!isSignUp && (
-            <div className="mb-6 rounded-md border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-              <p className="font-semibold text-slate-800">Demo account</p>
-              <p className="mt-1">admin@example.com / password123</p>
-              <p>instructor@example.com / password123</p>
-              <p>student@example.com / password123</p>
-            </div>
-          )}
+          {!isSignUp }
 
           {error && (
             <div className="mb-5 rounded-md border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">

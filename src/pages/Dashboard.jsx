@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 
@@ -151,11 +150,7 @@ const Dashboard = () => {
   }, [profile]);
 
   if (loading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-      </div>
-    );
+    return <div className="py-16 text-center text-sm text-slate-500">Loading dashboard...</div>;
   }
 
   const firstName = profile?.full_name?.split(' ').pop() || 'there';

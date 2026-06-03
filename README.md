@@ -11,14 +11,14 @@ Mini Learning Management System is a small-scale web application for online lear
 - Administrators can monitor system statistics and update user roles
 - Course cover upload through Supabase Storage
 - Lesson player with course outline, lesson completion status, and automatic progress calculation
-- Row Level Security policies in Supabase to protect role-based data access
+- Database access policies in Supabase to protect role-based data access
 
 ## Technology Stack
 
 - React + Vite
 - React Router
 - Tailwind CSS
-- Supabase Auth, PostgreSQL, Storage, and Row Level Security
+- Supabase Auth, PostgreSQL, Storage, and database access policies
 - ESLint
 
 ## Project Structure
@@ -35,7 +35,7 @@ Mini Learning Management System is a small-scale web application for online lear
 │   ├── App.jsx
 │   ├── index.css
 │   └── main.jsx
-├── supabase/schema.sql     # Database schema, RLS policies, triggers
+├── supabase/schema.sql     # Database schema, access policies, triggers
 ├── seed.js                 # Demo data seeding script
 ├── package.json
 └── README.md
@@ -97,7 +97,7 @@ Demo accounts:
 1. Sign in as Administrator to view system statistics and update user roles.
 2. Sign in as Instructor to create a course, add lessons, edit course details, and preview learning content.
 3. Sign in as Student to search for courses, enroll, watch a lesson, mark lessons as complete, and observe progress updates.
-4. Open Supabase to explain the database tables: `profiles`, `courses`, `lessons`, `enrollments`, `lesson_completions`, and the RLS policies.
+4. Open Supabase to explain the database tables: `profiles`, `courses`, `lessons`, `enrollments`, `lesson_completions`, triggers, and access rules.
 
 ## Documentation
 

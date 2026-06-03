@@ -325,7 +325,7 @@ const CourseEditor = () => {
             <div className="border-b border-slate-200 px-5 py-4">
               <h2 className="font-semibold text-slate-950">Course information</h2>
               <p className="mt-1 text-sm text-slate-500">
-                Use clear metadata so learners can understand the course before enrolling.
+                Use clear so learners can understand the course before enrolling.
               </p>
             </div>
             <div className="space-y-5 p-5">
